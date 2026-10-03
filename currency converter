@@ -1,6 +1,6 @@
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,9 +15,10 @@ public class CurrencyServer {
 
     public static void main(String[] args) throws IOException {
 
-        HttpServer server = HttpServer.create(
-                new InetSocketAddress(8080), 0
-        );
+        HttpServer server =
+                HttpServer.create(
+                        new InetSocketAddress(8080), 0
+                );
 
         server.createContext(
                 "/api/convert",
@@ -50,9 +51,11 @@ public class CurrencyServer {
             if ("GET".equalsIgnoreCase(
                     exchange.getRequestMethod())) {
 
-                URI requestURI = exchange.getRequestURI();
+                URI requestURI =
+                        exchange.getRequestURI();
 
-                String query = requestURI.getQuery();
+                String query =
+                        requestURI.getQuery();
 
                 Map<String, String> queryParams =
                         parseQueryParams(query);
@@ -62,39 +65,46 @@ public class CurrencyServer {
                 if (queryParams.containsKey("rupees")) {
 
                     try {
+
                         rupees = Double.parseDouble(
                                 queryParams.get("rupees")
                         );
+
                     } catch (NumberFormatException e) {
+
                         rupees = 0.0;
                     }
                 }
 
                 double dollars =
-                        rupees / INR_TO_USD_RATE;
+                        rupees * INR_TO_USD_RATE;
 
-                String jsonResponse = String.format(
-                        "{\"inputRupees\": %.2f, " +
-                        "\"convertedDollars\": %.2f, " +
-                        "\"exchangeRateUsed\": %.3f, " +
-                        "\"status\": \"SUCCESS\"}",
-                        rupees,
-                        dollars,
-                        INR_TO_USD_RATE
-                );
+                double roundedDollars =
+                        Math.round(dollars);
 
-                byte[] responseBytes =
-                        jsonResponse.getBytes();
+                String jsonResponse =
+                        String.format(
+                                "{\"inputRupees\": %.2f, "
+                                + "\"convertedDollars\": %.2f, "
+                                + "\"exchangeRateUsed\": %.3f, "
+                                + "\"status\": \"SUCCESS\"}",
+                                rupees,
+                                roundedDollars,
+                                INR_TO_USD_RATE
+                        );
 
                 exchange.sendResponseHeaders(
                         200,
-                        responseBytes.length
+                        jsonResponse.length()
                 );
 
                 OutputStream os =
                         exchange.getResponseBody();
 
-                os.write(responseBytes);
+                os.write(
+                        jsonResponse.getBytes()
+                );
+
                 os.close();
 
             } else {
@@ -117,12 +127,22 @@ public class CurrencyServer {
 
             for (String param : query.split("&")) {
 
-                String[] pair = param.split("=");
+                String[] pair =
+                        param.split("=");
 
                 if (pair.length > 1) {
-                    result.put(pair[0], pair[1]);
+
+                    result.put(
+                            pair[0],
+                            pair[1]
+                    );
+
                 } else if (pair.length == 1) {
-                    result.put(pair[0], "");
+
+                    result.put(
+                            pair[0],
+                            ""
+                    );
                 }
             }
 
@@ -149,21 +169,19 @@ public class ClientApp {
 
             Scanner scan = new Scanner(System.in);
 
-            System.out.println("Enter Rupees Amount:");
+            System.out.println("Enter USD Amount");
             double inputRupees = scan.nextDouble();
 
             String url =
                     "http://localhost:8080/api/convert?rupees="
                     + inputRupees;
 
-            HttpClient client =
-                    HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newHttpClient();
 
-            HttpRequest request =
-                    HttpRequest.newBuilder()
-                            .uri(URI.create(url))
-                            .GET()
-                            .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
 
             HttpResponse<String> response =
                     client.send(
